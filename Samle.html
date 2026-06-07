@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HAND CONSTELLATION</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cyan: #00ffe7;
+    --magenta: #ff00c8;
+    --gold: #ffe000;
+    --deep: #020814;
+    --mid: #050f20;
+    --glow-cyan: 0 0 8px #00ffe7, 0 0 20px #00ffe780, 0 0 50px #00ffe740;
+    --glow-mag: 0 0 8px #ff00c8, 0 0 20px #ff00c880, 0 0 50px #ff00c840;
+    --glow-gold: 0 0 8px #ffe000, 0 0 20px #ffe00080, 0 0 50px #ffe00030;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--deep);
+    color: var(--cyan);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* Starfield background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 25% 75%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 40% 10%, rgba(0,255,231,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 55%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 75% 30%, rgba(255,0,200,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 85% 80%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 5% 90%, rgba(255,224,0,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 50% 40%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 35% 60%, rgba(0,255,231,0.3) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 2rem 3rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid rgba(0,255,231,0.15);
+  }
+
+  .logo {
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: clamp(1rem, 3vw, 1.6rem);
+    letter-spacing: 0.3em;
+    color: var(--cyan);
+    text-shadow: var(--glow-cyan);
+    line-height: 1.2;
+  }
+
+  .logo span {
+    display: block;
+    font-size: 0.45em;
+    font-weight: 400;
+    color: var(--magenta);
+    text-shadow: var(--glow-mag);
+    letter-spacing: 0.5em;
+    margin-top: 0.3em;
+  }
+
+  .header-info {
+    text-align: right;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: rgba(0,255,231,0.4);
+    line-height: 2;
+  }
+
+  .header-info em {
+    color: var(--gold);
+    text-shadow: var(--glow-gold);
+    font-style: normal;
+  }
+
+  /* Main canvas area */
+  .stage {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1rem;
+    min-height: 70vh;
+  }
+
+  canvas {
+    display: block;
+    border: 1px solid rgba(0,255,231,0.08);
+    box-shadow:
+      0 0 40px rgba(0,255,231,0.05),
+      inset 0 0 60px rgba(0,0,10,0.6);
+    border-radius: 2px;
+    max-width: 100%;
+  }
+
+  /* Side panel */
+  .panel {
+    position: absolute;
+    right: 3rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 180px;
+    z-index: 10;
+  }
+
+  .panel-item {
+    border-left: 2px solid rgba(0,255,231,0.3);
+    padding: 0.6rem 0 0.6rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .panel-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.25em;
+    color: rgba(0,255,231,0.4);
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+
+  .panel-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--cyan);
+    text-shadow: var(--glow-cyan);
+  }
+
+  .panel-value.mag { color: var(--magenta); text-shadow: var(--glow-mag); }
+  .panel-value.gold { color: var(--gold); text-shadow: var(--glow-gold); }
+
+  /* Controls */
+  .controls {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem 3rem 2rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid rgba(0,255,231,0.4);
+    color: var(--cyan);
+    padding: 0.7rem 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--cyan);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .btn:hover {
+    color: var(--deep);
+    text-shadow: none;
+    box-shadow: var(--glow-cyan);
+    border-color: var(--cyan);
+  }
+  .btn:hover::before { opacity: 1; }
+  .btn span { position: relative; z-index: 1; }
+
+  .btn.mag {
+    border-color: rgba(255,0,200,0.4);
+    color: var(--magenta);
+  }
+  .btn.mag::before { background: var(--magenta); }
+  .btn.mag:hover { box-shadow: var(--glow-mag); border-color: var(--magenta); }
+
+  .btn.gold {
+    border-color: rgba(255,224,0,0.4);
+    color: var(--gold);
+  }
+  .btn.gold::before { background: var(--gold); }
+  .btn.gold:hover { box-shadow: var(--glow-gold); border-color: var(--gold); }
+
+  /* Footer */
+  footer {
+    position: relative;
+    z-index: 10;
+    padding: 1.5rem 3rem;
+    border-top: 1px solid rgba(0,255,231,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: rgba(0,255,231,0.25);
+  }
+
+  .constellation-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    color: rgba(255,0,200,0.5);
+    text-shadow: 0 0 10px rgba(255,0,200,0.3);
+    animation: blink 3s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Pulse ring on hover */
+  .pulse-hint {
+    position: absolute;
+    left: 3rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: rgba(0,255,231,0.3);
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+    z-index: 10;
+  }
+
+  @media (max-width: 900px) {
+    .panel, .pulse-hint { display: none; }
+    header { padding: 1.5rem; }
+    .controls { padding: 1rem 1.5rem 2rem; gap: 0.6rem; }
+    footer { padding: 1rem 1.5rem; flex-direction: column; gap: 0.5rem; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    MANUS<span>CONSTELLATION ATLAS</span>
+  </div>
+  <div class="header-info">
+    SECTOR <em>VII-Ω</em><br>
+    STELLAR CLASS <em>NEON</em><br>
+    CATALOG <em>#2047</em>
+  </div>
+</header>
+
+<div class="stage">
+  <div class="pulse-hint">— HOVER TO ACTIVATE NODES —</div>
+  <canvas id="c" width="700" height="620"></canvas>
+  <div class="panel" id="panel">
+    <div class="panel-item">
+      <div class="panel-label">Active Node</div>
+      <div class="panel-value" id="nodeId">—</div>
+    </div>
+    <div class="panel-item">
+      <div class="panel-label">Magnitude</div>
+      <div class="panel-value mag" id="nodeMag">—</div>
+    </div>
+    <div class="panel-item">
+      <div class="panel-label">Star Class</div>
+      <div class="panel-value gold" id="nodeClass">—</div>
+    </div>
+    <div class="panel-item">
+      <div class="panel-label">Connections</div>
+      <div class="panel-value" id="nodeConn">—</div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn" onclick="setMode('cyan')"><span>◈ CYAN MODE</span></button>
+  <button class="btn mag" onclick="setMode('magenta')"><span>◈ MAGENTA MODE</span></button>
+  <button class="btn gold" onclick="setMode('gold')"><span>◈ SOLAR MODE</span></button>
+  <button class="btn" onclick="togglePulse()"><span id="pulseBtn">◉ PULSE ON</span></button>
+  <button class="btn mag" onclick="toggleLines()"><span id="linesBtn">◈ LINES ON</span></button>
+</div>
+
+<footer>
+  <div>RA 06h 45m · DEC +16° 42′ · EPOCH J2000.0</div>
+  <div class="constellation-name">● MANUS STELLARUM ●</div>
+  <div>DIST 8.6 LY · PARALLAX 379.21 MAS</div>
+</footer>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// Palette
+const PALETTES = {
+  cyan:    { star: '#00ffe7', line: '#00ffe7', glow: '#00ffe780', dim: '#00ffe730' },
+  magenta: { star: '#ff00c8', line: '#ff00c8', glow: '#ff00c880', dim: '#ff00c830' },
+  gold:    { star: '#ffe000', line: '#ffe000', glow: '#ffe00080', dim: '#ffe00030' },
+};
+let palette = PALETTES.cyan;
+let pulseOn = true;
+let linesOn = true;
+let hoveredNode = null;
+let tick = 0;
+
+// Hand constellation: nodes (normalized 0-1) + edges
+const RAW_NODES = [
+  // Wrist base
+  { x: 0.50, y: 0.91, r: 6,  name: 'Alpha Carpi',  mag: '1.2', cls: 'K5 III',  id: 'α Cpr' },
+
+  // Palm
+  { x: 0.38, y: 0.78, r: 4,  name: 'Beta Carpi',   mag: '2.4', cls: 'G2 V',   id: 'β Cpr' },
+  { x: 0.50, y: 0.74, r: 5,  name: 'Gamma Carpi',  mag: '1.8', cls: 'A1 V',   id: 'γ Cpr' },
+  { x: 0.62, y: 0.78, r: 4,  name: 'Delta Carpi',  mag: '2.9', cls: 'F5 IV',  id: 'δ Cpr' },
+  { x: 0.45, y: 0.68, r: 3,  name: 'Eps Carpi',    mag: '3.5', cls: 'M2 III', id: 'ε Cpr' },
+  { x: 0.55, y: 0.68, r: 3,  name: 'Zeta Carpi',   mag: '3.1', cls: 'B8 V',   id: 'ζ Cpr' },
+
+  // Thumb
+  { x: 0.24, y: 0.70, r: 3,  name: 'Pollex I',     mag: '3.8', cls: 'G8 V',   id: 'Plx-I' },
+  { x: 0.16, y: 0.60, r: 3,  name: 'Pollex II',    mag: '4.1', cls: 'K0 V',   id: 'Plx-II' },
+  { x: 0.10, y: 0.50, r: 2.5,name: 'Pollex Tip',   mag: '4.7', cls: 'F8 V',   id: 'Plx-T' },
+
+  // Index finger
+  { x: 0.36, y: 0.58, r: 3,  name: 'Index I',      mag: '3.2', cls: 'A3 V',   id: 'Idx-I' },
+  { x: 0.33, y: 0.46, r: 3,  name: 'Index II',     mag: '3.6', cls: 'G5 IV',  id: 'Idx-II' },
+  { x: 0.30, y: 0.34, r: 2.5,name: 'Index III',    mag: '4.0', cls: 'K2 V',   id: 'Idx-III' },
+  { x: 0.28, y: 0.23, r: 2,  name: 'Index Tip',    mag: '4.8', cls: 'M0 V',   id: 'Idx-T' },
+
+  // Middle finger
+  { x: 0.47, y: 0.56, r: 3,  name: 'Medius I',     mag: '2.8', cls: 'B5 III', id: 'Med-I' },
+  { x: 0.46, y: 0.43, r: 3,  name: 'Medius II',    mag: '3.3', cls: 'A0 V',   id: 'Med-II' },
+  { x: 0.45, y: 0.30, r: 2.5,name: 'Medius III',   mag: '3.9', cls: 'F2 V',   id: 'Med-III' },
+  { x: 0.44, y: 0.18, r: 2,  name: 'Medius Tip',   mag: '4.5', cls: 'G3 V',   id: 'Med-T' },
+
+  // Ring finger
+  { x: 0.57, y: 0.58, r: 3,  name: 'Anulus I',     mag: '3.0', cls: 'K1 IV',  id: 'Anu-I' },
+  { x: 0.59, y: 0.46, r: 3,  name: 'Anulus II',    mag: '3.7', cls: 'G9 V',   id: 'Anu-II' },
+  { x: 0.61, y: 0.34, r: 2.5,name: 'Anulus III',   mag: '4.2', cls: 'F7 V',   id: 'Anu-III' },
+  { x: 0.63, y: 0.23, r: 2,  name: 'Anulus Tip',   mag: '4.9', cls: 'M1 V',   id: 'Anu-T' },
+
+  // Pinky
+  { x: 0.68, y: 0.64, r: 3,  name: 'Minimus I',    mag: '3.4', cls: 'K3 V',   id: 'Min-I' },
+  { x: 0.72, y: 0.53, r: 2.5,name: 'Minimus II',   mag: '4.0', cls: 'G6 V',   id: 'Min-II' },
+  { x: 0.75, y: 0.42, r: 2,  name: 'Minimus III',  mag: '4.6', cls: 'F4 V',   id: 'Min-III' },
+  { x: 0.77, y: 0.33, r: 1.8,name: 'Minimus Tip',  mag: '5.1', cls: 'K7 V',   id: 'Min-T' },
+];
+
+const EDGES = [
+  // Wrist to palm
+  [0,1],[0,2],[0,3],
+  // Palm cross
+  [1,2],[2,3],[1,4],[3,5],[4,5],[2,4],[2,5],
+  // Palm to thumb
+  [1,6],[6,7],[7,8],
+  // Palm to index
+  [4,9],[9,10],[10,11],[11,12],
+  // Palm to middle
+  [4,13],[5,13],[13,14],[14,15],[15,16],
+  // Palm to ring
+  [5,17],[17,18],[18,19],[19,20],
+  // Palm to pinky
+  [3,21],[21,22],[22,23],[23,24],
+  // knuckle line
+  [9,13],[13,17],[17,21],
+];
+
+// Scale nodes to canvas
+let nodes = [];
+function buildNodes() {
+  const W = canvas.width, H = canvas.height;
+  const PX = 60, PY = 40;
+  nodes = RAW_NODES.map(n => ({
+    ...n,
+    cx: PX + n.x * (W - 2*PX),
+    cy: PY + n.y * (H - 2*PY),
+    pulse: Math.random() * Math.PI * 2,
+    connections: 0,
+  }));
+  // count connections
+  EDGES.forEach(([a, b]) => { nodes[a].connections++; nodes[b].connections++; });
+}
+buildNodes();
+
+function setMode(m) { palette = PALETTES[m]; }
+function togglePulse() {
+  pulseOn = !pulseOn;
+  document.getElementById('pulseBtn').textContent = pulseOn ? '◉ PULSE ON' : '◎ PULSE OFF';
+}
+function toggleLines() {
+  linesOn = !linesOn;
+  document.getElementById('linesBtn').textContent = linesOn ? '◈ LINES ON' : '◈ LINES OFF';
+}
+
+// Interaction
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+  let closest = null, minD = 28;
+  nodes.forEach((n, i) => {
+    const d = Math.hypot(mx - n.cx, my - n.cy);
+    if (d < minD) { minD = d; closest = i; }
+  });
+  hoveredNode = closest;
+  if (closest !== null) {
+    const n = nodes[closest];
+    document.getElementById('nodeId').textContent = n.id;
+    document.getElementById('nodeMag').textContent = n.mag;
+    document.getElementById('nodeClass').textContent = n.cls;
+    document.getElementById('nodeConn').textContent = n.connections;
+  } else {
+    document.getElementById('nodeId').textContent = '—';
+    document.getElementById('nodeMag').textContent = '—';
+    document.getElementById('nodeClass').textContent = '—';
+    document.getElementById('nodeConn').textContent = '—';
+  }
+});
+canvas.addEventListener('mouseleave', () => { hoveredNode = null; });
+
+// Draw
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background gradient
+  const bg = ctx.createRadialGradient(W/2, H/2, 80, W/2, H/2, W*0.8);
+  bg.addColorStop(0, '#070f1e');
+  bg.addColorStop(1, '#020814');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  tick++;
+
+  // Draw constellation lines
+  if (linesOn) {
+    EDGES.forEach(([a, b]) => {
+      const na = nodes[a], nb = nodes[b];
+      const isHovered = hoveredNode === a || hoveredNode === b;
+      ctx.beginPath();
+      ctx.moveTo(na.cx, na.cy);
+      ctx.lineTo(nb.cx, nb.cy);
+      if (isHovered) {
+        ctx.strokeStyle = palette.glow.replace('80','ee');
+        ctx.lineWidth = 1.5;
+        ctx.shadowColor = palette.star;
+        ctx.shadowBlur = 12;
+      } else {
+        ctx.strokeStyle = palette.dim;
+        ctx.lineWidth = 0.7;
+        ctx.shadowBlur = 0;
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    });
+  }
+
+  // Draw nodes
+  nodes.forEach((n, i) => {
+    const isHovered = hoveredNode === i;
+    const pulseFactor = pulseOn ? Math.sin(tick * 0.04 + n.pulse) * 0.5 + 0.5 : 1;
+    const r = n.r + (isHovered ? 4 : 0) + (pulseOn ? pulseFactor * 2 : 0);
+
+    // Outer glow halo
+    if (isHovered || (pulseOn && pulseFactor > 0.7)) {
+      const halo = ctx.createRadialGradient(n.cx, n.cy, r * 0.5, n.cx, n.cy, r * 4);
+      halo.addColorStop(0, palette.glow);
+      halo.addColorStop(1, 'transparent');
+      ctx.beginPath();
+      ctx.arc(n.cx, n.cy, r * 4, 0, Math.PI*2);
+      ctx.fillStyle = halo;
+      ctx.fill();
+    }
+
+    // Star body
+    ctx.beginPath();
+    ctx.arc(n.cx, n.cy, r, 0, Math.PI*2);
+    if (isHovered) {
+      const grad = ctx.createRadialGradient(n.cx, n.cy, 0, n.cx, n.cy, r);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.4, palette.star);
+      grad.addColorStop(1, palette.glow);
+      ctx.fillStyle = grad;
+      ctx.shadowColor = palette.star;
+      ctx.shadowBlur = 20;
+    } else {
+      const grad = ctx.createRadialGradient(n.cx, n.cy, 0, n.cx, n.cy, r);
+      grad.addColorStop(0, palette.star + 'cc');
+      grad.addColorStop(1, palette.glow);
+      ctx.fillStyle = grad;
+      ctx.shadowColor = palette.star;
+      ctx.shadowBlur = pulseOn ? 8 + pulseFactor * 8 : 6;
+    }
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Crosshair on hovered
+    if (isHovered) {
+      const len = 14;
+      ctx.strokeStyle = palette.star + 'aa';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(n.cx - len, n.cy); ctx.lineTo(n.cx - r - 2, n.cy);
+      ctx.moveTo(n.cx + r + 2, n.cy); ctx.lineTo(n.cx + len, n.cy);
+      ctx.moveTo(n.cx, n.cy - len); ctx.lineTo(n.cx, n.cy - r - 2);
+      ctx.moveTo(n.cx, n.cy + r + 2); ctx.lineTo(n.cx, n.cy + len);
+      ctx.stroke();
+
+      // Label
+      ctx.font = '600 9px "Space Mono"';
+      ctx.fillStyle = palette.star;
+      ctx.shadowColor = palette.star;
+      ctx.shadowBlur = 6;
+      ctx.fillText(n.id, n.cx + r + 6, n.cy - 4);
+      ctx.shadowBlur = 0;
+    }
+  });
+
+  // Tick indicator
+  ctx.font = '9px "Space Mono"';
+  ctx.fillStyle = 'rgba(0,255,231,0.15)';
+  ctx.fillText(`T+${String(tick).padStart(5,'0')}`, 14, H - 12);
+
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>
